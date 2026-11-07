@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring AI Scaffold · 知识库问答演示</title>
+<style>
+  :root {
+    --bg: #f5f7f8;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #6b7785;
+    --line: #e3e8ec;
+    --accent: #0f766e;
+    --accent-soft: #e6f2f0;
+    --warn: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: .3px; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .identity { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .identity input { width: 96px; }
+  main {
+    max-width: 1180px;
+    margin: 20px auto 60px;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  section.card h2 {
+    font-size: 14px;
+    margin: 0 0 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  input, textarea, select, button { font: inherit; }
+  input, textarea, select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 84px; }
+  button {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button.ghost { background: #fff; color: var(--accent); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex-shrink: 0; }
+  .row > input { flex: 1 1 auto; min-width: 0; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .kb-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .kb-item {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .kb-item.active { border-color: var(--accent); background: var(--accent-soft); }
+  .kb-item .meta { flex: 1; min-width: 0; }
+  .kb-item .name { font-weight: 600; font-size: 13px; word-break: break-all; }
+  .kb-item .id { color: var(--muted); font-size: 11px; word-break: break-all; }
+  .doc-list { margin-top: 10px; font-size: 12px; color: var(--muted); max-height: 150px; overflow: auto; }
+  .doc-list div { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .chat-log {
+    min-height: 360px;
+    max-height: 560px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 2px;
+  }
+  .msg { max-width: 88%; padding: 9px 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: var(--accent-soft); border: 1px solid #cfe6e2; }
+  .msg.assistant { align-self: flex-start; background: #fbfcfd; border: 1px solid var(--line); }
+  .msg.meta { align-self: flex-start; font-size: 11px; color: var(--muted); background: transparent; padding: 0; }
+  .msg.error { align-self: flex-start; border: 1px solid #f3d6b2; background: #fdf6ec; color: var(--warn); font-size: 12px; }
+  .citations { margin-top: 8px; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 6px; }
+  .citations div { margin: 2px 0; word-break: break-all; }
+  .status-line { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .kv { display: grid; grid-template-columns: 120px 1fr; gap: 4px 8px; font-size: 12px; }
+  .kv span.k { color: var(--muted); }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .toolbar label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  pre { background: #f7f9fa; border: 1px solid var(--line); border-radius: 6px; padding: 8px; font-size: 12px; overflow: auto; max-height: 220px; }
+  .foot { color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Spring AI Scaffold · 演示</h1>
+    <div class="sub">带记忆对话 · 知识库问答 · SSE 流式 · 工具调用</div>
+  </div>
+  <div class="identity">
+    <label class="sub">租户 <input id="tenant" value="demo"></label>
+    <label class="sub">用户 <input id="user" value="alice"></label>
+    <label class="sub">角色 <input id="roles" value="user,admin"></label>
+  </div>
+</header>
+
+<main>
+  <div>
+    <section class="card">
+      <h2>知识库 <span class="badge" id="kbCount">0</span></h2>
+      <div class="row">
+        <input id="kbName" placeholder="新知识库名称，例如 员工手册">
+        <button id="btnCreateKb">新建</button>
+      </div>
+      <div class="hint">新建后会自动建表/建索引；选择知识库后可上传文档并参与问答。</div>
+      <div class="kb-list" id="kbList"></div>
+    </section>
+
+    <section class="card">
+      <h2>上传文档</h2>
+      <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.pdf,.log">
+      <div class="row" style="margin-top:8px">
+        <button id="btnUpload">上传并索引</button>
+        <button class="ghost" id="btnDocs">刷新列表</button>
+      </div>
+      <div class="hint">支持 txt / md / csv / json / log / pdf，单文件 ≤ 10MB。</div>
+      <div class="doc-list" id="docList">选择知识库后展示文档</div>
+    </section>
+
+    <section class="card">
+      <h2>运行状态</h2>
+      <div class="kv" id="healthBox"><span class="k">状态</span><span>加载中…</span></div>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" id="btnHealth">刷新</button>
+        <button class="ghost" id="btnTools">查看工具</button>
+      </div>
+      <pre id="toolsBox" style="display:none"></pre>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>对话 <span class="badge" id="convBadge">新会话</span></h2>
+    <div class="chat-log" id="chatLog"></div>
+    <div style="margin-top:12px">
+      <textarea id="question" placeholder="例如：员工年假有几天？订单 SO20261107001 到哪了？"></textarea>
+    </div>
+    <div class="toolbar">
+      <button id="btnSend">发送</button>
+      <button class="ghost" id="btnNewConv">新会话</button>
+      <label><input type="checkbox" id="optStream" checked style="width:auto"> 流式输出</label>
+      <label><input type="checkbox" id="optRag" checked style="width:auto"> 使用知识库</label>
+      <label><input type="checkbox" id="optTools" checked style="width:auto"> 允许工具调用</label>
+      <span class="status-line" id="statusLine"></span>
+    </div>
+    <div class="hint">提示：流式链路不支持工具调用；勾选“允许工具调用”时建议关闭流式，走 POST /api/ai/chat。</div>
+    <div class="foot">回车发送（Shift+Enter 换行）</div>
+  </section>
+</main>
+
+<script>
+const API = '/api/ai';
+const state = { kbId: null, conversationId: null, kbs: [], busy: false };
+
+function el(id) { return document.getElementById(id); }
+function identity() {
+  return {
+    tenant: el('tenant').value.trim() || 'demo',
+    user: el('user').value.trim() || 'anonymous',
+    roles: el('roles').value.trim() || 'user'
+  };
+}
+function headers(json) {
+  const id = identity();
+  const h = { 'X-Tenant-Id': id.tenant, 'X-User-Id': id.user, 'X-Roles': id.roles };
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    ...options,
+    headers: { ...headers(!(options.body instanceof FormData)), ...(options.headers || {}) }
+  });
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(text || ('HTTP ' + res.status)); }
+  if (!res.ok || data.ok === false) {
+    throw new Error((data && data.message) || ('HTTP ' + res.status));
+  }
+  return data.data;
+}
+function setStatus(text) { el('statusLine').textContent = text || ''; }
+function addMsg(cls, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.textContent = text;
+  el('chatLog').appendChild(div);
+  el('chatLog').scrollTop = el('chatLog').scrollHeight;
+  return div;
+}
+function addCitations(citations) {
+  if (!citations || !citations.length) return;
+  const box = document.createElement('div');
+  box.className = 'citations';
+  citations.forEach((c, i) => {
+    const line = document.createElement('div');
+    line.textContent = '[' + (c.index || (i + 1)) + '] ' + (c.docName || c.filename || c.source || c.docId || '') +
+      ' · ' + Number(c.score || 0).toFixed(3) + ' · ' + String(c.text || c.snippet || '').slice(0, 120);
+    box.appendChild(line);
+  });
+  el('chatLog').lastElementChild.appendChild(box);
+}
+
+async function loadHealth() {
+  try {
+    const data = await api('/health');
+    const box = el('healthBox');
+    box.innerHTML = '';
+    Object.entries(data).forEach(([k, v]) => {
+      const ks = document.createElement('span'); ks.className = 'k'; ks.textContent = k;
+      const vs = document.createElement('span'); vs.textContent = Array.isArray(v) ? v.length : String(v);
+      box.appendChild(ks); box.appendChild(vs);
+    });
+  } catch (e) {
+    el('healthBox').innerHTML = '<span class="k">错误</span><span>' + e.message + '</span>';
+  }
+}
+
+async function loadKbs() {
+  try {
+    state.kbs = await api('/kb');
+  } catch (e) {
+    state.kbs = [];
+  }
+  el('kbCount').textContent = state.kbs.length;
+  const list = el('kbList');
+  list.innerHTML = '';
+  if (!state.kbs.length) {
+    list.innerHTML = '<div class="hint">还没有知识库，先在上方新建一个。</div>';
+    return;
+  }
+  state.kbs.forEach(kb => {
+    const item = document.createElement('div');
+    item.className = 'kb-item' + (state.kbId === kb.id ? ' active' : '');
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const name = document.createElement('div'); name.className = 'name'; name.textContent = kb.name;
+    const id = document.createElement('div'); id.className = 'id';
+    id.textContent = kb.id + ' · ' + kb.embeddingModel + ' · ' + kb.dimension + '维';
+    meta.appendChild(name); meta.appendChild(id);
+    const pick = document.createElement('button');
+    pick.className = 'ghost';
+    pick.textContent = state.kbId === kb.id ? '已选' : '选择';
+    pick.onclick = () => { state.kbId = kb.id; loadKbs(); loadDocs(); };
+    const del = document.createElement('button');
+    del.className = 'ghost';
+    del.textContent = '删除';
+    del.onclick = async () => {
+      if (!confirm('删除知识库 ' + kb.name + '？')) return;
+      try { await api('/kb/' + kb.id, { method: 'DELETE' }); state.kbId = null; loadKbs(); el('docList').textContent = '选择知识库后展示文档'; }
+      catch (e) { alert(e.message); }
+    };
+    item.appendChild(meta); item.appendChild(pick); item.appendChild(del);
+    list.appendChild(item);
+  });
+}
+
+async function createKb() {
+  const name = el('kbName').value.trim();
+  if (!name) { alert('请填写知识库名称'); return; }
+  try {
+    const kb = await api('/kb', { method: 'POST', body: JSON.stringify({ name, description: '' }) });
+    state.kbId = kb.id;
+    el('kbName').value = '';
+    loadKbs(); el('docList').textContent = '知识库已创建，可以上传文档了';
+  } catch (e) { alert(e.message); }
+}
+
+async function upload() {
+  if (!state.kbId) { alert('请先选择知识库'); return; }
+  const file = el('fileInput').files[0];
+  if (!file) { alert('请选择文件'); return; }
+  const form = new FormData();
+  form.append('file', file);
+  el('btnUpload').disabled = true;
+  setStatus('上传并索引中…（大文件需要几十秒）');
+  try {
+    const doc = await api('/kb/' + state.kbId + '/documents', { method: 'POST', body: form });
+    setStatus('');
+    alert('索引完成：' + doc.filename + '，分片 ' + doc.chunkCount + ' 个');
+    loadDocs();
+  } catch (e) {
+    setStatus('');
+    alert('上传失败：' + e.message);
+  } finally {
+    el('btnUpload').disabled = false;
+  }
+}
+
+async function loadDocs() {
+  if (!state.kbId) return;
+  try {
+    const docs = await api('/kb/' + state.kbId + '/documents');
+    const box = el('docList');
+    box.innerHTML = '';
+    if (!docs.length) { box.textContent = '暂无文档'; return; }
+    docs.forEach(d => {
+      const row = document.createElement('div');
+      row.textContent = d.filename + ' · ' + d.status + ' · ' + d.chunkCount + ' 片';
+      box.appendChild(row);
+    });
+  } catch (e) {
+    el('docList').textContent = e.message;
+  }
+}
+
+function newConversation() {
+  state.conversationId = null;
+  el('chatLog').innerHTML = '';
+  el('convBadge').textContent = '新会话';
+}
+
+async function sendNonStream(body) {
+  const data = await api('/chat', { method: 'POST', body: JSON.stringify(body) });
+  state.conversationId = data.conversationId;
+  el('convBadge').textContent = data.conversationId;
+  const msg = addMsg('assistant', data.answer || '');
+  addCitations(data.citations);
+  addMsg('meta', '模型 ' + data.model + ' · token ' + data.promptTokens + '/' + data.completionTokens +
+    ' · ' + data.latencyMs + 'ms' + (data.toolsUsed && data.toolsUsed.length ? ' · 工具 ' + data.toolsUsed.join(',') : ''));
+}
+
+async function sendStream(body) {
+  const res = await fetch(API + '/chat/stream', {
+    method: 'POST',
+    headers: headers(true),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || ('HTTP ' + res.status));
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let bubble = null;
+  let eventName = null;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split('\n\n');
+    buffer = blocks.pop();
+    for (const block of blocks) {
+      const lines = block.split('\n');
+      let dataLine = '';
+      for (const line of lines) {
+        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+        else if (line.startsWith('data:')) dataLine += line.slice(5).trim();
+      }
+      if (!dataLine) continue;
+      let payload;
+      try { payload = JSON.parse(dataLine); } catch (e) { continue; }
+      if (eventName === 'meta') {
+        state.conversationId = payload.conversationId;
+        el('convBadge').textContent = payload.conversationId;
+        const meta = '模型 ' + payload.model + ' · 会话 ' + payload.conversationId;
+        addMsg('meta', meta);
+        bubble = addMsg('assistant', '');
+      } else if (eventName === 'token') {
+        if (!bubble) bubble = addMsg('assistant', '');
+        bubble.textContent += payload.content || '';
+        el('chatLog').scrollTop = el('chatLog').scrollHeight;
+      } else if (eventName === 'done') {
+        addMsg('meta', '完成 · token ' + payload.promptTokens + '/' + payload.completionTokens + ' · ' + payload.latencyMs + 'ms');
+        if (bubble && !bubble.textContent) bubble.textContent = payload.answer || '';
+      } else if (eventName === 'error') {
+        addMsg('error', payload.message || '生成失败');
+      }
+    }
+  }
+}
+
+async function send() {
+  if (state.busy) return;
+  const question = el('question').value.trim();
+  if (!question) return;
+  el('question').value = '';
+  addMsg('user', question);
+  state.busy = true;
+  el('btnSend').disabled = true;
+  setStatus('生成中…');
+  const body = {
+    question,
+    conversationId: state.conversationId,
+    kbIds: (el('optRag').checked && state.kbId) ? [state.kbId] : [],
+    useRag: el('optRag').checked,
+    useTools: el('optTools').checked
+  };
+  try {
+    if (el('optStream').checked && !body.useTools) await sendStream(body);
+    else await sendNonStream(body);
+  } catch (e) {
+    addMsg('error', e.message);
+  } finally {
+    state.busy = false;
+    el('btnSend').disabled = false;
+    setStatus('');
+  }
+}
+
+async function showTools() {
+  try {
+    const tools = await api('/tools');
+    el('toolsBox').style.display = 'block';
+    el('toolsBox').textContent = JSON.stringify(tools, null, 2);
+  } catch (e) { alert(e.message); }
+}
+
+el('btnCreateKb').onclick = createKb;
+el('btnUpload').onclick = upload;
+el('btnDocs').onclick = loadDocs;
+el('btnHealth').onclick = loadHealth;
+el('btnTools').onclick = showTools;
+el('btnSend').onclick = send;
+el('btnNewConv').onclick = newConversation;
+el('question').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+loadHealth();
+loadKbs();
+addMsg('assistant', '你好，我是接入 Spring AI Scaffold 的演示助手。可以上传文档到左侧知识库，然后在这里提问；也可以试试「订单 SO20261107001 到哪了」触发工具调用。');
+</script>
+</body>
+</html>

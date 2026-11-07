@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: scaffold-postgres
+    environment:
+      POSTGRES_DB: scaffold
+      POSTGRES_USER: scaffold
+      POSTGRES_PASSWORD: scaffold
+    ports:
+      - "5432:5432"
+    volumes:
+      - scaffold-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scaffold -d scaffold"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: scaffold-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - scaffold-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  scaffold-pgdata:
+  scaffold-redisdata:

@@ -1,0 +1,108 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: spring-ai-scaffold-demo
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+logging:
+  level:
+    root: WARN
+    com.scaffoldai: INFO
+    # 想看「本次用的是哪个模型、真实模型名、打到哪个地址、多少 token」：
+    #   方式一：把上面这行改成 DEBUG（整包生效）
+    #   方式二：启动加 --logging.level.com.scaffoldai=debug（不改文件）
+    # 注意别再单独给 com.scaffoldai.chat / com.scaffoldai.model 写级别，
+    # 子 logger 的显式级别会覆盖父级 DEBUG，导致命令行 debug 不生效。
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+
+ai:
+  scaffold:
+    enabled: true
+    default-chat-model: dashscope
+    default-embedding-model: dashscope
+
+    models:
+      # 公共模型：OpenAI 兼容协议，工具调用 / 流式都可用，作为默认模型
+      dashscope:
+        type: dashscope
+        base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+        api-key: ${DASHSCOPE_API_KEY:}
+        chat-model: qwen-plus
+        embedding-model: text-embedding-v4
+        embedding-dimension: 1024
+        temperature: 0.3
+        max-tokens: 2048
+        timeout-seconds: 60
+
+      # 本地 Ollama（可选）：先 ollama pull qwen2.5:7b && ollama pull nomic-embed-text
+      # 不配 fallback、请求体不传 "model": "ollama" 时不会被调用
+      ollama:
+        type: ollama
+        base-url: http://localhost:11434
+        chat-model: qwen2.5:7b
+        embedding-model: nomic-embed-text
+        embedding-dimension: 768
+
+    chat:
+      max-tool-rounds: 4
+      history-window: 20
+      sse-timeout-seconds: 120
+      stream-executor-size: 8
+
+    memory:
+      # memory / redis / jdbc / auto
+      store: jdbc
+      max-messages: 40
+      ttl-minutes: 1440
+
+    rag:
+      # memory / pgvector / redis / auto
+      # demo 用进程内存储：重启后知识库丢失，生产请切 pgvector
+      store: memory
+      top-k: 5
+      min-score: 0.45
+      chunk-size: 900
+      chunk-overlap: 150
+      max-file-size-mb: 10
+      hybrid-enabled: true
+
+    security:
+      # 本版为 header 透传模式：X-Tenant-Id / X-User-Id / X-Roles
+      mode: header
+      default-tenant: demo
+      default-roles: user
+
+    rate-limit:
+      enabled: true
+      tenant-rpm: 600
+      user-rpm: 60
+      store: memory
+
+    moderation:
+      enabled: true
+      max-input-chars: 4000
+      blocked-words:
+        - 炸弹制作
+
+    audit:
+      enabled: true
+      store: auto
+      memory-capacity: 5000
+
+    web:
+      enabled: true
+      base-path: /api/ai
+      cors-allowed-origins: "*"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -1,0 +1,6 @@
+com.scaffoldai.autoconfigure.AiScaffoldRedisConfiguration
+com.scaffoldai.autoconfigure.AiScaffoldPgVectorConfiguration
+com.scaffoldai.autoconfigure.AiScaffoldJdbcConfiguration
+com.scaffoldai.autoconfigure.AiScaffoldRagAutoConfiguration
+com.scaffoldai.autoconfigure.AiScaffoldAutoConfiguration
+com.scaffoldai.autoconfigure.AiScaffoldWebAutoConfiguration
