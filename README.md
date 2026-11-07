@@ -1,8 +1,24 @@
 # spring-ai-scaffold
 
+[English](README.en.md) | 简体中文
+
+![license](https://img.shields.io/badge/license-Apache--2.0-2f9e8f)
+![java](https://img.shields.io/badge/java-17-2f9e8f)
+![spring boot](https://img.shields.io/badge/spring%20boot-3.5.3-2f9e8f)
+![dependencies](https://img.shields.io/badge/spring--ai-free-2f9e8f)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
 一个 Spring Boot starter：**引入依赖就拥有「带记忆的对话 + 可用的知识库问答」**，不依赖 `spring-ai` 官方库，只用 JDK 自带的 `java.net.http.HttpClient` 直连模型 HTTP 接口。
 
 定位很朴素：给内部知识库问答、客服问答、企业内部 Copilot 这类需求，提供一个能直接改、能直接跑、依赖极少的起点。
+
+<p align="center">
+  <img src="docs/screenshots/01-overview.png" width="46%" alt="知识库、文档上传与运行状态" />
+  <img src="docs/screenshots/02-chat.png" width="46%" alt="对话面板：流式、知识库、工具调用开关" />
+</p>
+
+<p align="center"><i>demo 真实界面：上传文档 → 自动切分入库 → 勾选「使用知识库」提问。截图跑在本地 mock 模型上，不消耗真实额度。</i></p>
+
 
 ```
 业务工程 (Spring Boot)  ──依赖──>  spring-ai-scaffold-starter
@@ -60,8 +76,10 @@ spring-ai-scaffold/
 │       ├── moderation/ ratelimit/ audit/ metrics/
 │       └── web/                   REST 接口、DTO、异常处理
 ├── spring-ai-scaffold-demo/       可运行 demo：上传文档 + 提问（含单页前端）
+├── docs/                          截图、示例文档、发版说明
 ├── scripts/                       check-models.ps1 / mock-model-server.py
-└── docker-compose.yml             本地 PostgreSQL(pgvector) 与 Redis
+├── docker-compose.yml             本地 PostgreSQL(pgvector) 与 Redis
+├── CHANGELOG.md / CONTRIBUTING.md  版本记录与贡献指南
 ```
 
 ## 快速开始
