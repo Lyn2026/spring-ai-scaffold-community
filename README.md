@@ -100,7 +100,7 @@ java -jar spring-ai-scaffold-demo\target\spring-ai-scaffold-demo-1.0.0.jar
 
 打开 http://localhost:8080 ，页面里可以直接：
 
-1. 新建知识库 → 上传 `.txt` / `.pdf`（会自动切分、向量化入库）；
+1. 新建知识库 → 上传 `.txt` / `.md` / `.pdf`（会自动切分、向量化入库），想直接试可上传仓库里的示例文档 `docs/samples/售后政策.md`，再问「退款多久到账？」；
 2. 在对话框提问，勾选「使用知识库」即可带引用作答；
 3. 勾选「流式」观察 SSE 逐字返回。
 
